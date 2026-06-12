@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Medica Forward — Accelerated Learning Event Schedule Builder (SharePoint-Backed)</title>
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B3760;--calm-blue:#345181;--deep-jade:#0A857C;--jade:#1CA08E;
+  --berry:#C81766;--marigold:#FEB820;--warm-gray:#F8F3F2;--charcoal:#22272D;
+  --white:#FFFFFF;--pale-blue:#D7E8FE;--pale-jade:#C7EDE9;--light-blue:#8DA9D5;
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --radius:10px;--radius-sm:6px;
+}
+body{font-family:var(--font);background:var(--warm-gray);color:var(--charcoal);line-height:1.5;min-height:100vh}
+a{color:var(--calm-blue);text-decoration:none}
+code{background:#f2f4f8;padding:2px 6px;border-radius:4px}
+pre{white-space:pre-wrap}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--warm-gray)}
+::-webkit-scrollbar-thumb{background:var(--light-blue);border-radius:3px}
+.header{background:var(--navy);color:var(--white);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(27,55,96,.25)}
+.header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
+.brand h1{font-size:22px;font-weight:700;letter-spacing:.5px}
+.brand .dot{color:var(--jade);font-size:26px;line-height:1}
+.brand small{font-size:11px;opacity:.7;display:block;margin-top:-2px;letter-spacing:1.5px;text-transform:uppercase}
+.nav-tabs{display:flex;gap:4px;align-items:center}
+.nav-tabs button{background:transparent;border:none;color:rgba(255,255,255,.7);font:600 14px var(--font);padding:8px 18px;border-radius:var(--radius-sm);cursor:pointer;transition:.2s}
+.nav-tabs button:hover{background:rgba(255,255,255,.1);color:var(--white)}
+.nav-tabs button.active{background:rgba(255,255,255,.15);color:var(--white)}
+.nav-tabs .admin-btn{font-size:18px;padding:8px 12px;opacity:.6}
+.nav-tabs .admin-btn:hover{opacity:1}
+.user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer}
+.user-chip .avatar{width:28px;height:28px;border-radius:50%;background:var(--jade);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--white)}
+.event-bar{background:var(--calm-blue);color:var(--white);text-align:center;padding:10px 16px;font-size:13px;letter-spacing:.5px}
+.event-bar strong{color:var(--marigold)}
+.filters-wrap{max-width:1280px;margin:0 auto;padding:20px 24px 0}
+.filter-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.filter-row .label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--calm-blue);margin-right:6px;min-width:55px}
+.chip{border:none;padding:7px 16px;border-radius:20px;font:600 13px var(--font);cursor:pointer;transition:.2s;color:var(--white)}
+.chip.outline{background:transparent;border:1.5px solid var(--light-blue);color:var(--calm-blue)}
+.chip.outline.active,.chip.outline:hover{background:var(--calm-blue);color:var(--white);border-color:var(--calm-blue)}
+.chip.track{opacity:.75}.chip.track.active,.chip.track:hover{opacity:1;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.main{max-width:1280px;margin:0 auto;padding:16px 24px 80px}
+.section-label{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--calm-blue);margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+.section-label .line{flex:1;height:1px;background:var(--light-blue);opacity:.4}
+.break-banner{background:var(--pale-blue);color:var(--navy);text-align:center;padding:14px;border-radius:var(--radius);font-weight:700;font-size:14px;margin:8px 0 18px;letter-spacing:.5px}
+.break-banner.lunch{background:var(--pale-jade);color:var(--deep-jade)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:8px}
+.card{background:var(--white);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:.2s;position:relative;display:flex;flex-direction:column}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
+.card.keynote{border:1.5px solid rgba(27,55,96,.18);background:linear-gradient(180deg,#FFFFFF 0%,#F7FAFF 100%)}
+.card .track-bar{height:5px;width:100%}
+.card-body{padding:16px 18px 14px;flex:1;display:flex;flex-direction:column}
+.card .track-chip{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;color:var(--white);margin-bottom:8px;width:fit-content}
+.card h3{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;line-height:1.3}
+.card .desc{font-size:13px;color:#555;margin-bottom:10px;flex:1}
+.card .meta{font-size:12px;color:#777;display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
+.card .meta span{display:flex;align-items:center;gap:5px}
+.card .footer-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card .spots{font-size:12px;font-weight:600}.card .spots.full{color:var(--berry)}.card .spots.open{color:var(--deep-jade)}
+.btn{border:none;padding:8px 18px;border-radius:20px;font:600 13px var(--font);cursor:pointer;transition:.2s}
+.btn-signup{background:var(--deep-jade);color:var(--white)}.btn-signup:hover{background:var(--jade)}
+.btn-signup:disabled{background:#bbb;cursor:not-allowed}
+.btn-remove{background:var(--berry);color:var(--white)}.btn-remove:hover{background:#a01155}
+.btn-full{background:#ddd;color:#888;cursor:not-allowed}
+.btn-conflict{background:#f0e6c8;color:#8a6d00;cursor:not-allowed;font-size:12px}
+.btn-secondary{background:#eef3fb;color:var(--navy)}
+.registered-badge{position:absolute;top:12px;right:12px;background:var(--deep-jade);color:var(--white);font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px}
+.my-schedule-card{background:var(--white);border-radius:var(--radius);padding:18px 20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.my-schedule-card .time-block{min-width:100px;text-align:center}
+.my-schedule-card .time{font-size:15px;font-weight:700;color:var(--navy)}
+.my-schedule-card .slot{font-size:11px;color:#999}
+.my-schedule-card .divider{width:4px;height:48px;border-radius:2px;flex-shrink:0}
+.my-schedule-card .info{flex:1}
+.my-schedule-card .info h4{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:2px}
+.my-schedule-card .info p{font-size:12px;color:#777}
+.empty-state{text-align:center;padding:60px 20px;color:#999}
+.empty-state .icon{font-size:48px;margin-bottom:12px}.empty-state h3{font-size:18px;color:var(--navy);margin-bottom:6px}
+.admin-panel,.status-panel{background:var(--white);border-radius:var(--radius);padding:24px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.admin-panel h2,.status-panel h2{font-size:18px;color:var(--navy);margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-grid.full{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--calm-blue)}
+.form-group input,.form-group select,.form-group textarea{border:1.5px solid #ddd;border-radius:var(--radius-sm);padding:9px 12px;font:14px var(--font);transition:.2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--calm-blue);outline:none;box-shadow:0 0 0 3px rgba(52,81,129,.1)}
+.form-group textarea{resize:vertical;min-height:60px}
+.btn-admin{background:var(--navy);color:var(--white);padding:10px 24px;border-radius:var(--radius-sm);margin-top:12px}.btn-admin:hover{background:var(--calm-blue)}
+.btn-admin.delete{background:var(--berry)}.btn-admin.delete:hover{background:#a01155}
+.admin-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}
+.admin-table th{background:var(--navy);color:var(--white);padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.admin-table td{padding:10px 12px;border-bottom:1px solid #eee}.admin-table tr:hover td{background:var(--warm-gray)}
+.admin-actions{display:flex;gap:6px}.btn-sm{padding:5px 12px;font-size:12px;border-radius:14px}
+.alert{border-left:4px solid var(--calm-blue);background:#f6f9fe;color:#42526e;padding:14px 16px;border-radius:8px;margin-bottom:14px;font-size:13px}
+.alert.warn{border-left-color:var(--marigold);background:#fff8e6;color:#755400}
+.alert.error{border-left-color:var(--berry);background:#fff1f6;color:#8f1746}
+.kv{display:grid;grid-template-columns:220px 1fr;gap:8px 16px;font-size:13px;margin-top:12px}
+.kv .k{font-weight:700;color:var(--navy)}
+.toast-container{position:fixed;top:76px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{padding:14px 20px;border-radius:var(--radius-sm);color:var(--white);font:600 14px var(--font);box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .3s ease;max-width:460px}
+.toast.success{background:var(--deep-jade)}.toast.error{background:var(--berry)}.toast.info{background:var(--calm-blue)}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+.modal-overlay{position:fixed;inset:0;background:rgba(27,55,96,.7);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal{background:var(--white);border-radius:16px;padding:36px 32px 28px;width:90%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.modal h2{color:var(--navy);font-size:22px;margin-bottom:4px}.modal .sub{color:#777;font-size:14px;margin-bottom:20px}
+.modal .form-group{margin-bottom:14px}.modal .btn-login{width:100%;background:var(--navy);color:var(--white);padding:12px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;margin-top:6px}
+.modal .btn-login:hover{background:var(--calm-blue)}
+.footer{background:var(--navy);color:rgba(255,255,255,.6);text-align:center;padding:16px;font-size:12px;margin-top:auto}
+.print-header{display:none}
+@media print{.header,.event-bar,.filters-wrap,.footer,.toast-container,.nav-tabs,.admin-panel,.btn-signup,.btn-remove,.status-panel{display:none!important}.main{padding:0}body{background:#fff}.my-schedule-card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}@page{margin:1cm}.print-header{display:block!important;text-align:center;margin-bottom:20px;padding-top:12px}.print-header h1{font-size:24px;color:var(--navy)}.print-header p{font-size:14px;color:#666}}
+@media(max-width:768px){.header-inner{flex-wrap:wrap;height:auto;padding:10px 0;gap:8px}.nav-tabs{width:100%;justify-content:center}.user-chip{display:none}.form-grid{grid-template-columns:1fr}.card-grid{grid-template-columns:1fr}.my-schedule-card{flex-direction:column;align-items:stretch;text-align:center}.my-schedule-card .time-block{min-width:auto}.my-schedule-card .divider{width:100%;height:3px}.filters-wrap{padding:12px 16px 0}.main{padding:12px 16px 80px}.kv{grid-template-columns:1fr}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <h2>Welcome to Medica Forward</h2>
+    <p class="sub">This version is SharePoint-backed and does not rely on local browser storage. If automatic SharePoint user detection is unavailable in the current host, enter your name and email manually.</p>
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="loginName" placeholder="e.g. Jane Smith" />
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="e.g. jane.smith@medica.com" />
+    </div>
+    <button class="btn btn-login" onclick="handleLogin()">Let's Go →</button>
+  </div>
+</div>
+<header class="header">
+  <div class="header-inner">
+    <div class="brand"><div><h1>Medica<span class="dot">.</span> Forward</h1><small>Internal Accelerated Learning Event · Summer 2026</small></div></div>
+    <div class="nav-tabs">
+      <button class="active" onclick="switchView('sessions')" id="tabSessions">📋 All Sessions</button>
+      <button onclick="switchView('schedule')" id="tabSchedule">⭐ My Schedule</button>
+      <button class="admin-btn" onclick="switchView('admin')" id="tabAdmin" title="Admin">⚙️</button>
+    </div>
+    <div class="user-chip" id="userChip" onclick="handleLogout()">
+      <div class="avatar" id="userAvatar">?</div>
+      <span id="userName">Guest</span>
+    </div>
+  </div>
+</header>
+<div class="event-bar">📅 July 23–25, 2026 &nbsp;·&nbsp; <strong>Flex Week</strong> &nbsp;·&nbsp; Kick-off keynote + 4 focused tracks &nbsp;·&nbsp; 30 and 60 min breakouts</div>
+<div class="toast-container" id="toastContainer"></div>
+<div class="filters-wrap" id="filtersWrap">
+  <div class="filter-row">
+    <span class="label">Track</span>
+    <button class="chip outline active" onclick="filterTrack('all')" data-track="all">All</button>
+    <button class="chip track" style="background:var(--calm-blue)" onclick="filterTrack('mdf')" data-track="mdf">MDF</button>
+    <button class="chip track" style="background:var(--berry)" onclick="filterTrack('ai')" data-track="ai">AI</button>
+    <button class="chip track" style="background:var(--deep-jade)" onclick="filterTrack('devops')" data-track="devops">DevOps</button>
+    <button class="chip track" style="background:var(--marigold);color:var(--navy)" onclick="filterTrack('atp')" data-track="atp">ATP</button>
+  </div>
+  <div class="filter-row">
+    <span class="label">Time</span>
+    <button class="chip outline active" onclick="filterTime('all')" data-time="all">All</button>
+    <button class="chip outline" onclick="filterTime('morning')" data-time="morning">☀️ Morning</button>
+    <button class="chip outline" onclick="filterTime('midday')" data-time="midday">🌤️ Midday</button>
+    <button class="chip outline" onclick="filterTime('afternoon')" data-time="afternoon">🌇 Afternoon</button>
+  </div>
+</div>
+<main class="main" id="mainContent"></main>
+<div class="print-header"><h1>Medica Forward — My Schedule</h1><p>Internal Accelerated Learning Event · July 23–25, 2026</p></div>
+<footer class="footer">© 2026 Medica | Internal Use Only</footer>
+<script>
+/* ================================================================
+   CONFIGURATION
+   KEEP YOUR UPDATED VALUES HERE
+   ================================================================ */
+const SP_CONFIG = {
+  siteUrl: window.location.origin + "https://medicamsitc.sharepoint.com/sites/MedicaDeliveryFramework-Central", // <-- replace with your real site root
+  lists: {
+    sessions: "MedicaForwardSessions",
+    registrations: "MedicaForwardRegistrations",
+    preferences: "MedicaForwardPreferences"
+  },
+  useAutomaticSharePointUser: true,
+  // KEEP YOUR ADJUSTED ADMIN INDICATORS HERE
+  adminEmailIndicators: ["langhus", "admin", "weihert"],
+  exportAllRegistrationsOnAdmin: true,
+  allowManualLoginInSandbox: true
+};
+
+const TRACKS = [
+  {id:'mdf',name:'MDF',color:'#345181',sortOrder:1},
+  {id:'ai',name:'AI',color:'#C81766',sortOrder:2},
+  {id:'devops',name:'DevOps',color:'#0A857C',sortOrder:3},
+  {id:'atp',name:'ATP',color:'#FEB820',sortOrder:4,textColor:'#1B3760'}
+];
+const TIME_SLOTS = [
+  {id:1,start:'08:30',end:'10:00',label:'8:30 – 10:00 AM',block:'morning'},
+  {id:2,start:'10:30',end:'11:30',label:'10:30 – 11:30 AM',block:'morning'},
+  {id:3,start:'11:30',end:'12:00',label:'11:30 AM – 12:00 PM',block:'midday'},
+  {id:4,start:'13:00',end:'14:00',label:'1:00 – 2:00 PM',block:'afternoon'},
+  {id:5,start:'14:00',end:'14:30',label:'2:00 – 2:30 PM',block:'afternoon'},
+  {id:6,start:'14:30',end:'15:00',label:'2:30 – 3:00 PM',block:'afternoon'},
+  {id:7,start:'15:00',end:'15:30',label:'3:00 – 3:30 PM',block:'afternoon'},
+  {id:8,start:'15:30',end:'16:00',label:'3:30 – 4:00 PM',block:'afternoon'},
+  {id:9,start:'16:00',end:'16:30',label:'4:00 – 4:30 PM',block:'afternoon'}
+];
+
+let state = {
+  currentUser: null,
+  sessions: [],
+  registrations: [],
+  allRegistrations: [],
+  view: 'sessions',
+  filterTrack: 'all',
+  filterTime: 'all',
+  editingSession: null,
+  preferences: {
+    spId: null,
+    preferredTrack: '',
+    preferredTimeBlock: '',
+    wantsReminders: false,
+    lastView: 'sessions',
+    filterTrack: 'all',
+    filterTime: 'all'
+  },
+  entityTypes: {},
+  diagnostics: [],
+  lastError: null,
+  host: {
+    isSandboxed: false,
+    isSrcDoc: false,
+    canUseLocalStorage: false,
+    topLevelAccessible: true
+  }
+};
+
+/* ================================================================
+   HELPERS
+   ================================================================ */
+function normalizeEmail(email){return String(email||'').trim().toLowerCase();}
+function makeUserId(email){return 'user-'+normalizeEmail(email).replace(/[^a-z0-9]/g,'_');}
+function isAdminEmail(email){const value=normalizeEmail(email);return SP_CONFIG.adminEmailIndicators.some(indicator=>value.includes(indicator));}
+function getTrack(id){return TRACKS.find(t=>t.id===id)||TRACKS[0];}
+function getSlot(id){return TIME_SLOTS.find(s=>s.id===id)||TIME_SLOTS[0];}
+function qs(selector){return document.querySelector(selector);}
+function qsa(selector){return Array.from(document.querySelectorAll(selector));}
+function escapeHtml(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function showToast(msg,type='info'){const c=qs('#toastContainer');const t=document.createElement('div');t.className='toast '+type;t.textContent=msg;c.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(100px)';t.style.transition='.3s';setTimeout(()=>t.remove(),300)},4200)}
+function updateUserChip(){if(!state.currentUser){qs('#userName').textContent='Guest';qs('#userAvatar').textContent='?';return;}qs('#userName').textContent=state.currentUser.name;qs('#userAvatar').textContent=state.currentUser.name.charAt(0).toUpperCase();}
+function isRegistered(sessionId){return !!state.currentUser && state.registrations.some(r=>normalizeEmail(r.userEmail)===state.currentUser.email && r.sessionId===sessionId);}
+function hasConflict(timeSlotId){return !!state.currentUser && state.registrations.some(r=>normalizeEmail(r.userEmail)===state.currentUser.email && Number(r.timeSlotId)===Number(timeSlotId));}
+function registrationFor(sessionId){return state.registrations.find(r=>normalizeEmail(r.userEmail)===state.currentUser?.email && r.sessionId===sessionId)||null;}
+function setButtonStates(){const view=state.view;qs('#tabSessions').classList.toggle('active',view==='sessions');qs('#tabSchedule').classList.toggle('active',view==='schedule');qs('#tabAdmin').classList.toggle('active',view==='admin');qs('#filtersWrap').classList.toggle('hidden',view!=='sessions');qsa('[data-track]').forEach(b=>b.classList.toggle('active',b.dataset.track===state.filterTrack));qsa('[data-time]').forEach(b=>b.classList.toggle('active',b.dataset.time===state.filterTime));}
+function recordDiagnostic(name,status,detail=''){state.diagnostics.push({time:new Date().toISOString(),name,status,detail});if(state.diagnostics.length>50) state.diagnostics.shift();}
+function detectHostConstraints(){
+  state.host.isSrcDoc = window.location.href === 'about:srcdoc';
+  state.host.isSandboxed = false;
+  try { state.host.isSandboxed = !!window.frameElement?.hasAttribute('sandbox'); } catch { state.host.isSandboxed = true; }
+  try { void window.top.location.href; state.host.topLevelAccessible = true; } catch { state.host.topLevelAccessible = false; }
+  try {
+    const k='__mf_test__';
+    window.localStorage.setItem(k,'1');
+    window.localStorage.removeItem(k);
+    state.host.canUseLocalStorage = true;
+  } catch {
+    state.host.canUseLocalStorage = false;
+  }
+}
+
+/* ================================================================
+   SAFE NO-OP LOCAL STORAGE HELPERS
+   ================================================================ */
+function cacheUserLocally(){return;}
+function hydrateCachedUser(){return null;}
+function clearLocalUserCache(){return;}
+
+/* ================================================================
+   SHAREPOINT REST
+   ================================================================ */
+async function spGet(url){
+  recordDiagnostic('GET', 'pending', url);
+  const response = await fetch(url, { method:'GET', headers:{'Accept':'application/json;odata=verbose'}, credentials:'include' });
+  if(!response.ok){
+    const text=await response.text();
+    recordDiagnostic('GET', `${response.status} ${response.statusText}`, `${url}\n${text}`);
+    throw new Error(`GET ${response.status}: ${response.statusText} @ ${url}`);
+  }
+  recordDiagnostic('GET', `${response.status} ${response.statusText}`, url);
+  return response.json();
+}
+async function getRequestDigest(){
+  const url=`${SP_CONFIG.siteUrl}/_api/contextinfo`;
+  recordDiagnostic('POST contextinfo','pending',url);
+  const response = await fetch(url,{method:'POST',headers:{'Accept':'application/json;odata=verbose','Content-Type':'application/json;odata=verbose'},credentials:'include'});
+  if(!response.ok){
+    const text=await response.text();
+    recordDiagnostic('POST contextinfo',`${response.status} ${response.statusText}`,`${url}\n${text}`);
+    throw new Error(`Unable to get request digest: ${response.status} ${response.statusText} @ ${url}`);
+  }
+  const data=await response.json();
+  recordDiagnostic('POST contextinfo',`${response.status} ${response.statusText}`,url);
+  return data.d.GetContextWebInformation.FormDigestValue;
+}
+async function spWrite(url,body=null,extraHeaders={}){
+  const digest=await getRequestDigest();
+  const headers={'Accept':'application/json;odata=verbose','X-RequestDigest':digest,...extraHeaders};
+  if(body!==null) headers['Content-Type']='application/json;odata=verbose';
+  recordDiagnostic('POST write','pending',url);
+  const response=await fetch(url,{method:'POST',headers,credentials:'include',body:body!==null?JSON.stringify(body):null});
+  if(!response.ok){
+    const text=await response.text();
+    recordDiagnostic('POST write',`${response.status} ${response.statusText}`,`${url}\n${text}`);
+    throw new Error(`POST ${response.status}: ${response.statusText} @ ${url}`);
+  }
+  const text=await response.text();
+  recordDiagnostic('POST write',`${response.status} ${response.statusText}`,url);
+  return text?JSON.parse(text):null;
+}
+async function getListItemEntityType(listTitle){
+  if(state.entityTypes[listTitle]) return state.entityTypes[listTitle];
+  const url=`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${listTitle}')?$select=ListItemEntityTypeFullName`;
+  const data=await spGet(url);
+  state.entityTypes[listTitle]=data.d.ListItemEntityTypeFullName;
+  return state.entityTypes[listTitle];
+}
+async function loadSharePointCurrentUser(){
+  const url=`${SP_CONFIG.siteUrl}/_api/web/currentuser`;
+  const data=await spGet(url);
+  const email=normalizeEmail(data.d.Email || data.d.UserPrincipalName || '');
+  if(!email) return null;
+  return { id:makeUserId(email), name:data.d.Title || email, email, isAdmin:isAdminEmail(email) };
+}
+
+/* ================================================================
+   LIST LOAD / SAVE
+   ================================================================ */
+async function loadSessionsFromSharePoint(){
+  const url=`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.sessions}')/items?$top=500&$orderby=TimeSlotId asc`;
+  const data=await spGet(url);
+  state.sessions=data.d.results.map(item=>({
+    spId:item.Id, id:item.SessionId || `session-${item.Id}`, title:item.Title, description:item.Description || '',
+    speakerName:item.SpeakerName || '', speakerTitle:item.SpeakerTitle || '', trackId:item.TrackId || 'mdf',
+    timeSlotId:Number(item.TimeSlotId || 1), room:item.Room || '', capacity:Number(item.Capacity || 0),
+    registeredCount:Number(item.RegisteredCount || 0), isActive:item.IsActive !== false, isKeynote:!!item.IsKeynote
+  }));
+}
+async function loadRegistrationsFromSharePoint(){
+  if(!state.currentUser){state.registrations=[];return;}
+  const email=state.currentUser.email.replace(/'/g,"''");
+  const url=`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.registrations}')/items?$top=500&$filter=UserEmail eq '${email}'`;
+  const data=await spGet(url);
+  state.registrations=data.d.results.map(item=>({spId:item.Id,id:`reg-${item.Id}`,userEmail:item.UserEmail,userName:item.UserName,sessionId:item.SessionId,timeSlotId:Number(item.TimeSlotId),registeredAt:item.RegisteredAt}));
+}
+async function loadAllRegistrationsFromSharePoint(){
+  const url=`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.registrations}')/items?$top=5000`;
+  const data=await spGet(url);
+  state.allRegistrations=data.d.results.map(item=>({spId:item.Id,userEmail:item.UserEmail,userName:item.UserName,sessionId:item.SessionId,timeSlotId:Number(item.TimeSlotId),registeredAt:item.RegisteredAt}));
+}
+async function loadPreferencesFromSharePoint(){
+  if(!state.currentUser) return;
+  const email=state.currentUser.email.replace(/'/g,"''");
+  const url=`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.preferences}')/items?$top=1&$filter=UserEmail eq '${email}'`;
+  const data=await spGet(url);
+  const pref=data.d.results[0];
+  if(!pref) return;
+  state.preferences={spId:pref.Id,preferredTrack:pref.PreferredTrack || '',preferredTimeBlock:pref.PreferredTimeBlock || '',wantsReminders:!!pref.WantsReminders,lastView:pref.LastView || 'sessions',filterTrack:pref.FilterTrack || 'all',filterTime:pref.FilterTime || 'all'};
+  state.view=state.preferences.lastView || 'sessions';
+  state.filterTrack=state.preferences.filterTrack || 'all';
+  state.filterTime=state.preferences.filterTime || 'all';
+}
+async function savePreferencesToSharePoint(){
+  if(!state.currentUser) return;
+  const listTitle=SP_CONFIG.lists.preferences;
+  const entityType=await getListItemEntityType(listTitle);
+  const payload={__metadata:{type:entityType},Title:state.currentUser.name,UserEmail:state.currentUser.email,PreferredTrack:state.preferences.preferredTrack || '',PreferredTimeBlock:state.preferences.preferredTimeBlock || '',WantsReminders:!!state.preferences.wantsReminders,LastView:state.view,FilterTrack:state.filterTrack,FilterTime:state.filterTime};
+  if(state.preferences.spId){
+    await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${listTitle}')/items(${state.preferences.spId})`,payload,{'IF-MATCH':'*','X-HTTP-Method':'MERGE'});
+  } else {
+    const result=await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${listTitle}')/items`,payload);
+    state.preferences.spId=result?.d?.Id || null;
+  }
+}
+async function updateSessionCount(spItemId,newCount){
+  const listTitle=SP_CONFIG.lists.sessions;
+  const entityType=await getListItemEntityType(listTitle);
+  const payload={__metadata:{type:entityType},RegisteredCount:newCount};
+  await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${listTitle}')/items(${spItemId})`,payload,{'IF-MATCH':'*','X-HTTP-Method':'MERGE'});
+}
+
+/* ================================================================
+   PREFLIGHT / AUTH / INIT
+   ================================================================ */
+async function runDiagnostics(){
+  state.diagnostics=[];
+  recordDiagnostic('Host','info',JSON.stringify(state.host));
+  const checks=[
+    {name:'Current User',url:`${SP_CONFIG.siteUrl}/_api/web/currentuser`},
+    {name:'Sessions List',url:`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.sessions}')/items?$top=1`},
+    {name:'Registrations List',url:`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.registrations}')/items?$top=1`},
+    {name:'Preferences List',url:`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.preferences}')/items?$top=1`}
+  ];
+  const results=[];
+  for(const check of checks){
+    try {
+      const response=await fetch(check.url,{method:'GET',headers:{'Accept':'application/json;odata=verbose'},credentials:'include'});
+      const detail=`${check.url}`;
+      results.push({name:check.name,status:`${response.status} ${response.statusText}`,ok:response.ok,detail});
+      recordDiagnostic(check.name,`${response.status} ${response.statusText}`,detail);
+    } catch(err){
+      results.push({name:check.name,status:'Exception',ok:false,detail:String(err)});
+      recordDiagnostic(check.name,'Exception',String(err));
+    }
+  }
+  return results;
+}
+
+function getHostWarnings(){
+  const warnings=[];
+  if(state.host.isSrcDoc) warnings.push('This page is running as about:srcdoc (sandboxed/embedded host).');
+  if(state.host.isSandboxed) warnings.push('The current host uses a sandboxed iframe. Some browser APIs and auth behaviors may be restricted.');
+  if(!state.host.topLevelAccessible) warnings.push('Top-level window access is blocked by the current host.');
+  if(!state.host.canUseLocalStorage) warnings.push('Browser localStorage is unavailable in this host. This version no longer depends on it.');
+  return warnings;
+}
+
+async function initializeUserData(){
+  try {
+    state.lastError=null;
+    showToast('Loading event data…','info');
+    await loadSessionsFromSharePoint();
+    if(state.currentUser){
+      await Promise.all([
+        loadRegistrationsFromSharePoint(),
+        loadPreferencesFromSharePoint(),
+        state.currentUser.isAdmin && SP_CONFIG.exportAllRegistrationsOnAdmin ? loadAllRegistrationsFromSharePoint() : Promise.resolve()
+      ]);
+    }
+    qs('#loginModal').classList.add('hidden');
+    updateUserChip();
+    render();
+  } catch(err){
+    console.error('initializeUserData failed:', err);
+    state.lastError = err;
+    const diag = await runDiagnostics().catch(() => []);
+    renderLaunchFailure(err, diag);
+    showToast(`Failed to load SharePoint data: ${err.message}`, 'error');
+    qs('#loginModal').classList.remove('hidden');
+  }
+}
+async function autoDetectUser(){
+  try {
+    if(!SP_CONFIG.useAutomaticSharePointUser) return false;
+    if(state.host.isSrcDoc || state.host.isSandboxed) {
+      recordDiagnostic('AutoDetect','skipped','Sandbox/srcdoc host detected');
+      return false;
+    }
+    const user=await loadSharePointCurrentUser();
+    if(!user) return false;
+    state.currentUser=user;
+    await initializeUserData();
+    showToast(`Welcome, ${user.name.split(' ')[0]}!`,'success');
+    return true;
+  } catch(err){
+    console.warn('Auto user detection failed:',err);
+    recordDiagnostic('AutoDetect','Exception',String(err));
+    return false;
+  }
+}
+function handleLogin(){
+  const name=qs('#loginName').value.trim();
+  const email=normalizeEmail(qs('#loginEmail').value.trim());
+  if(!name || !email){showToast('Please enter both name and email.','error');return;}
+  state.currentUser={id:makeUserId(email),name,email,isAdmin:isAdminEmail(email)};
+  initializeUserData().then(()=>showToast(`Welcome, ${name.split(' ')[0]}! 🎉`,'success'));
+}
+function handleLogout(){
+  if(!confirm('Sign out?')) return;
+  clearLocalUserCache();
+  state.currentUser=null; state.registrations=[]; state.allRegistrations=[]; state.view='sessions'; state.filterTrack='all'; state.filterTime='all';
+  state.preferences={spId:null,preferredTrack:'',preferredTimeBlock:'',wantsReminders:false,lastView:'sessions',filterTrack:'all',filterTime:'all'};
+  updateUserChip(); qs('#loginModal').classList.remove('hidden'); render();
+}
+
+/* ================================================================
+   FILTERS / VIEWS
+   ================================================================ */
+async function filterTrack(val){state.filterTrack=val;setButtonStates();render();try{await savePreferencesToSharePoint()}catch(err){console.warn(err)}}
+async function filterTime(val){state.filterTime=val;setButtonStates();render();try{await savePreferencesToSharePoint()}catch(err){console.warn(err)}}
+async function switchView(view){state.view=view;setButtonStates();render();try{await savePreferencesToSharePoint()}catch(err){console.warn(err)}}
+
+/* ================================================================
+   REGISTRATION
+   ================================================================ */
+async function refreshRegistrationCounts(){if(state.currentUser?.isAdmin && SP_CONFIG.exportAllRegistrationsOnAdmin){await loadAllRegistrationsFromSharePoint();}}
+async function signUp(sessionId){
+  try{
+    const session=state.sessions.find(s=>s.id===sessionId); if(!session || !state.currentUser) return;
+    if(session.registeredCount>=session.capacity){showToast('This session is full.','error');return;}
+    if(hasConflict(session.timeSlotId)){showToast('You already have a session in this time slot!','error');return;}
+    if(isRegistered(sessionId)){showToast('Already registered!','error');return;}
+    const listTitle=SP_CONFIG.lists.registrations; const entityType=await getListItemEntityType(listTitle);
+    const payload={__metadata:{type:entityType},Title:`${state.currentUser.name} - ${session.title}`,SessionId:session.id,UserEmail:state.currentUser.email,UserName:state.currentUser.name,TimeSlotId:session.timeSlotId,RegisteredAt:new Date().toISOString()};
+    const result=await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${listTitle}')/items`,payload);
+    state.registrations.push({spId:result?.d?.Id,id:`reg-${result?.d?.Id}`,userEmail:state.currentUser.email,userName:state.currentUser.name,sessionId:session.id,timeSlotId:session.timeSlotId,registeredAt:payload.RegisteredAt});
+    session.registeredCount+=1; await updateSessionCount(session.spId,session.registeredCount); await refreshRegistrationCounts(); render(); showToast(`Signed up for "${session.title}" ✓`,'success');
+  } catch(err){console.error(err); showToast(`Failed to register: ${err.message}`,'error');}
+}
+async function removeRegistration(sessionId){
+  try{
+    const reg=registrationFor(sessionId); if(!reg) return;
+    await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.registrations}')/items(${reg.spId})`,null,{'IF-MATCH':'*','X-HTTP-Method':'DELETE'});
+    state.registrations=state.registrations.filter(r=>r.spId!==reg.spId);
+    const session=state.sessions.find(s=>s.id===sessionId); if(session && session.registeredCount>0){session.registeredCount-=1; await updateSessionCount(session.spId,session.registeredCount);}
+    await refreshRegistrationCounts(); render(); showToast('Removed from schedule.','info');
+  } catch(err){console.error(err); showToast(`Failed to remove registration: ${err.message}`,'error');}
+}
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function renderSessionCard(s,showRemove=false){
+  const track=getTrack(s.trackId); const slot=getSlot(s.timeSlotId); const displayColor=s.isKeynote?'#1B3760':track.color; const displayName=s.isKeynote?'All Tracks':track.name; const displayTextColor=s.isKeynote?'#FFFFFF':(track.textColor||'#FFFFFF'); const full=Number(s.registeredCount)>=Number(s.capacity); const reg=isRegistered(s.id); const conflict=!reg && hasConflict(s.timeSlotId); const spotsLeft=Math.max(0,Number(s.capacity)-Number(s.registeredCount));
+  let btnHtml='';
+  if(showRemove) btnHtml=`<button class="btn btn-remove btn-sm" onclick="removeRegistration('${escapeHtml(s.id)}')">Remove</button>`;
+  else if(reg) btnHtml='<button class="btn btn-signup btn-sm" disabled>✓ Registered</button>';
+  else if(full) btnHtml='<button class="btn btn-full btn-sm" disabled>Full</button>';
+  else if(conflict) btnHtml='<button class="btn btn-conflict btn-sm" disabled>⚠ Time Conflict</button>';
+  else btnHtml=`<button class="btn btn-signup btn-sm" onclick="signUp('${escapeHtml(s.id)}')">Sign Up</button>`;
+  return `<div class="card ${s.isKeynote?'keynote':''}"><div class="track-bar" style="background:${displayColor}"></div>${reg?'<div class="registered-badge">✓ Registered</div>':''}<div class="card-body"><span class="track-chip" style="background:${displayColor};color:${displayTextColor}">${escapeHtml(displayName)}</span><h3>${escapeHtml(s.title)}</h3><p class="desc">${escapeHtml(s.description)}</p><div class="meta"><span>🕐 ${escapeHtml(slot.label)}</span><span>🎤 ${escapeHtml(s.speakerName)} · ${escapeHtml(s.speakerTitle)}</span><span>📍 ${escapeHtml(s.room)}</span></div><div class="footer-row"><span class="spots ${full?'full':'open'}">${full?'Full — 0 spots':`${spotsLeft} of ${escapeHtml(s.capacity)} spots`}</span>${btnHtml}</div></div></div>`;
+}
+function renderStatusPanel(){
+  const warnings=getHostWarnings();
+  return `<div class="status-panel"><h2>Launch / Host Status</h2>
+    <div class="alert ${state.lastError?'error':''}"><strong>Current site URL:</strong> <code>${escapeHtml(SP_CONFIG.siteUrl)}</code><br /><strong>Sessions list:</strong> <code>${escapeHtml(SP_CONFIG.lists.sessions)}</code><br /><strong>Registrations list:</strong> <code>${escapeHtml(SP_CONFIG.lists.registrations)}</code><br /><strong>Preferences list:</strong> <code>${escapeHtml(SP_CONFIG.lists.preferences)}</code></div>
+    ${warnings.length ? `<div class="alert warn"><strong>Host warning${warnings.length>1?'s':''}:</strong><br />${warnings.map(w=>`• ${escapeHtml(w)}`).join('<br />')}</div>` : '<div class="alert"><strong>Host check:</strong> No sandbox/localStorage blockers detected.</div>'}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn btn-secondary btn-sm" onclick="rerunDiagnostics()">Run Diagnostics</button><button class="btn btn-secondary btn-sm" onclick="copyDiagnostics()">Copy Diagnostics</button></div>
+    <div class="kv"><div class="k">window.location.href</div><div>${escapeHtml(window.location.href)}</div><div class="k">Sandboxed iframe</div><div>${escapeHtml(String(state.host.isSandboxed))}</div><div class="k">about:srcdoc</div><div>${escapeHtml(String(state.host.isSrcDoc))}</div><div class="k">Top-level access</div><div>${escapeHtml(String(state.host.topLevelAccessible))}</div><div class="k">localStorage available</div><div>${escapeHtml(String(state.host.canUseLocalStorage))}</div></div>
+  </div>`;
+}
+function renderLaunchFailure(err,diag=[]){
+  const main=qs('#mainContent');
+  const diagnosticRows=(diag||[]).map(d=>`<tr><td>${escapeHtml(d.name)}</td><td>${escapeHtml(d.status)}</td><td>${escapeHtml(d.detail)}</td></tr>`).join('');
+  main.innerHTML=`${renderStatusPanel()}<div class="status-panel"><h2>SharePoint Launch Failure</h2><div class="alert error"><strong>Error:</strong> ${escapeHtml(err.message || String(err))}</div><p style="font-size:13px;color:#555;margin-bottom:12px">If this page is being opened via preview, guest-access, or an embedded HTML wrapper, move it to a normal SharePoint site/page hosting path. If the host is correct, verify the site URL and list titles above.</p><div style="overflow:auto"><table class="admin-table"><thead><tr><th>Check</th><th>Status</th><th>Detail</th></tr></thead><tbody>${diagnosticRows || '<tr><td colspan="3">No diagnostics captured.</td></tr>'}</tbody></table></div></div>`;
+}
+function renderPreferencesPanel(){return `<div class="admin-panel" style="margin-bottom:16px"><h2>⚙️ My Preferences</h2><div class="form-grid"><div class="form-group"><label>Preferred Track</label><select id="prefTrack" onchange="savePreferenceSettings()"><option value="">No Preference</option>${TRACKS.map(t=>`<option value="${t.id}" ${state.preferences.preferredTrack===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div><div class="form-group"><label>Preferred Time of Day</label><select id="prefTimeBlock" onchange="savePreferenceSettings()"><option value="">No Preference</option><option value="morning" ${state.preferences.preferredTimeBlock==='morning'?'selected':''}>Morning</option><option value="midday" ${state.preferences.preferredTimeBlock==='midday'?'selected':''}>Midday</option><option value="afternoon" ${state.preferences.preferredTimeBlock==='afternoon'?'selected':''}>Afternoon</option></select></div></div><div class="form-group" style="margin-top:12px"><label style="text-transform:none;letter-spacing:0;font-size:14px"><input type="checkbox" id="prefReminders" ${state.preferences.wantsReminders?'checked':''} onchange="savePreferenceSettings()" /> Send me reminders</label></div></div>`;}
+async function savePreferenceSettings(){state.preferences.preferredTrack=qs('#prefTrack')?.value || '';state.preferences.preferredTimeBlock=qs('#prefTimeBlock')?.value || '';state.preferences.wantsReminders=qs('#prefReminders')?.checked || false;try{await savePreferencesToSharePoint();showToast('Preferences saved ✓','success')}catch(err){console.error(err);showToast(`Failed to save preferences: ${err.message}`,'error')}}
+function renderSessions(){
+  const main=qs('#mainContent');
+  let html=renderStatusPanel();
+  const filtered=state.sessions.filter(s=>{if(!s.isActive) return false; if(state.filterTrack!=='all' && s.trackId!==state.filterTrack) return false; const slot=getSlot(s.timeSlotId); if(state.filterTime!=='all' && slot.block!==state.filterTime) return false; return true;});
+  const slotGroups={}; filtered.forEach(s=>{if(!slotGroups[s.timeSlotId]) slotGroups[s.timeSlotId]=[]; slotGroups[s.timeSlotId].push(s)});
+  const sortedSlotIds=Object.keys(slotGroups).map(Number).sort((a,b)=>a-b); let checkpoints=new Set();
+  for(const slotId of sortedSlotIds){ const slot=getSlot(slotId); if(slotId===2 && !checkpoints.has('break2')){html+='<div class="break-banner">☕ 10:00 – 10:30 AM · Break</div>'; checkpoints.add('break2');} if(slotId===4 && !checkpoints.has('lunch4')){html+='<div class="break-banner lunch">🍽️ 12:00 – 1:00 PM · Lunch</div>'; checkpoints.add('lunch4');} html += `<div class="section-label"><span>${escapeHtml(slot.label)}</span><span class="line"></span></div><div class="card-grid">`; slotGroups[slotId].sort((a,b)=>getTrack(a.trackId).sortOrder-getTrack(b.trackId).sortOrder); slotGroups[slotId].forEach(s=>html += renderSessionCard(s)); html += '</div>'; }
+  if(!filtered.length) html += '<div class="empty-state"><div class="icon">🔍</div><h3>No sessions match your filters</h3><p>Try adjusting your track or time filters above.</p></div>';
+  main.innerHTML=html;
+}
+function renderSchedule(){const main=qs('#mainContent'); if(!state.currentUser){main.innerHTML=`${renderStatusPanel()}<div class="empty-state"><div class="icon">🔒</div><h3>Sign in to see your schedule</h3></div>`; return;} const myRegs=[...state.registrations].sort((a,b)=>a.timeSlotId-b.timeSlotId); let html=renderStatusPanel()+renderPreferencesPanel(); if(!myRegs.length){html += '<div class="empty-state"><div class="icon">📅</div><h3>No sessions yet</h3><p>Browse the sessions tab and sign up for the ones that interest you!</p></div>'; main.innerHTML=html; return;} html += `<div class="section-label"><span>My Schedule — ${myRegs.length} session${myRegs.length>1?'s':''}</span><span class="line"></span></div><div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-signup btn-sm" onclick="window.print()" style="background:var(--calm-blue)">🖨️ Print</button></div>`; for(const r of myRegs){const s=state.sessions.find(x=>x.id===r.sessionId); if(!s) continue; const track=getTrack(s.trackId); const slot=getSlot(s.timeSlotId); const displayColor=s.isKeynote?'#1B3760':track.color; html += `<div class="my-schedule-card"><div class="time-block"><div class="time">${escapeHtml(slot.label)}</div><div class="slot">Slot ${escapeHtml(slot.id)}</div></div><div class="divider" style="background:${displayColor}"></div><div class="info"><h4>${escapeHtml(s.title)}</h4><p>🎤 ${escapeHtml(s.speakerName)} · 📍 ${escapeHtml(s.room)}</p></div><button class="btn btn-remove btn-sm" onclick="removeRegistration('${escapeHtml(s.id)}')">Remove</button></div>`;} main.innerHTML=html;}
+function renderAdmin(){const main=qs('#mainContent'); if(!state.currentUser || !state.currentUser.isAdmin){main.innerHTML=`${renderStatusPanel()}<div class="empty-state"><div class="icon">🔒</div><h3>Admin access required</h3><p>Use an admin email pattern configured in <code>SP_CONFIG.adminEmailIndicators</code>.</p></div>`; return;} const editing=state.editingSession; const trackOpts=TRACKS.map(t=>`<option value="${t.id}" ${editing&&editing.trackId===t.id?'selected':''}>${t.name}</option>`).join(''); const slotOpts=TIME_SLOTS.map(s=>`<option value="${s.id}" ${editing&&Number(editing.timeSlotId)===s.id?'selected':''}>${s.label}</option>`).join(''); let html=renderStatusPanel()+`<div class="admin-panel"><h2>${editing?'✏️ Edit Session':'➕ Add New Session'}</h2><div class="form-grid"><div class="form-group"><label>Title</label><input id="aTitle" value="${escapeHtml(editing?.title || '')}" /></div><div class="form-group"><label>Speaker Name</label><input id="aSpeaker" value="${escapeHtml(editing?.speakerName || '')}" /></div><div class="form-group"><label>Speaker Title</label><input id="aSpeakerTitle" value="${escapeHtml(editing?.speakerTitle || '')}" /></div><div class="form-group"><label>Track</label><select id="aTrack">${trackOpts}</select></div><div class="form-group"><label>Time Slot</label><select id="aSlot">${slotOpts}</select></div><div class="form-group"><label>Room</label><input id="aRoom" value="${escapeHtml(editing?.room || '')}" /></div><div class="form-group"><label>Capacity</label><input type="number" id="aCapacity" value="${escapeHtml(editing?.capacity || 30)}" /></div><div class="form-group"><label>Session ID</label><input id="aSessionId" value="${escapeHtml(editing?.id || '')}" placeholder="e.g. ai-7" /></div></div><div class="form-grid full" style="margin-top:12px"><div class="form-group"><label>Description</label><textarea id="aDesc">${escapeHtml(editing?.description || '')}</textarea></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="aActive" ${editing?.isActive!==false?'checked':''} /> Active</label><label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" id="aKeynote" ${editing?.isKeynote?'checked':''} /> Keynote</label></div><div style="display:flex;gap:8px"><button class="btn btn-admin" onclick="saveSession()">${editing?'Update':'Add'} Session</button>${editing?'<button class="btn btn-admin delete" onclick="cancelEdit()">Cancel</button>':''}</div></div>`;
+  html += `<div class="admin-panel"><h2>📋 All Sessions (${state.sessions.length})</h2><div style="overflow-x:auto"><table class="admin-table"><thead><tr><th>Slot</th><th>Track</th><th>Title</th><th>Speaker</th><th>Registered</th><th>Actions</th></tr></thead><tbody>`;
+  const sorted=[...state.sessions].sort((a,b)=>a.timeSlotId-b.timeSlotId || getTrack(a.trackId).sortOrder-getTrack(b.trackId).sortOrder);
+  for(const s of sorted){const track=getTrack(s.trackId); const slot=getSlot(s.timeSlotId); html += `<tr><td>${escapeHtml(slot.label)}</td><td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${track.color};color:${track.textColor || '#fff'};font-size:11px;font-weight:700">${escapeHtml(track.name)}</span></td><td>${escapeHtml(s.title)}</td><td>${escapeHtml(s.speakerName)}</td><td>${escapeHtml(s.registeredCount)} / ${escapeHtml(s.capacity)}</td><td class="admin-actions"><button class="btn btn-signup btn-sm" onclick="editSession('${escapeHtml(s.id)}')">Edit</button><button class="btn btn-remove btn-sm" onclick="deleteSession('${escapeHtml(s.id)}')">Delete</button></td></tr>`;}
+  html += `</tbody></table></div></div><div style="margin-top:12px;text-align:right"><button class="btn btn-admin" onclick="exportCSV()">📤 Export Registrations CSV</button></div>`;
+  main.innerHTML=html;
+}
+async function saveSession(){try{const title=qs('#aTitle').value.trim(); const desc=qs('#aDesc').value.trim(); const speaker=qs('#aSpeaker').value.trim(); const speakerTitle=qs('#aSpeakerTitle').value.trim(); const trackId=qs('#aTrack').value; const timeSlotId=parseInt(qs('#aSlot').value,10); const room=qs('#aRoom').value.trim(); const capacity=parseInt(qs('#aCapacity').value,10); const sessionId=qs('#aSessionId').value.trim() || `${trackId}-${Date.now()}`; const isActive=qs('#aActive').checked; const isKeynote=qs('#aKeynote').checked; if(!title || !speaker || !sessionId){showToast('Title, speaker, and session ID are required.','error'); return;} const listTitle=SP_CONFIG.lists.sessions; const entityType=await getListItemEntityType(listTitle); const payload={__metadata:{type:entityType},Title:title,SessionId:sessionId,Description:desc,SpeakerName:speaker,SpeakerTitle:speakerTitle,TrackId:trackId,TimeSlotId:timeSlotId,Room:room,Capacity:capacity,IsActive:isActive,IsKeynote:isKeynote,RegisteredCount:state.editingSession ? state.editingSession.registeredCount : 0}; if(state.editingSession){await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${listTitle}')/items(${state.editingSession.spId})`,payload,{'IF-MATCH':'*','X-HTTP-Method':'MERGE'}); showToast('Session updated ✓','success');} else {await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${listTitle}')/items`,payload); showToast('Session added ✓','success');} state.editingSession=null; await loadSessionsFromSharePoint(); render(); window.scrollTo(0,0);} catch(err){console.error(err); showToast(`Failed to save session: ${err.message}`,'error')}}
+function editSession(id){state.editingSession=state.sessions.find(s=>s.id===id)||null; render(); window.scrollTo(0,0)}
+function cancelEdit(){state.editingSession=null; render()}
+async function deleteSession(id){if(!confirm('Delete this session? All registrations will be removed.')) return; try{const session=state.sessions.find(s=>s.id===id); if(!session) return; await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.sessions}')/items(${session.spId})`,null,{'IF-MATCH':'*','X-HTTP-Method':'DELETE'}); const registrationsToDelete=(state.allRegistrations.length?state.allRegistrations:state.registrations).filter(r=>r.sessionId===id); for(const reg of registrationsToDelete){try{await spWrite(`${SP_CONFIG.siteUrl}/_api/web/lists/GetByTitle('${SP_CONFIG.lists.registrations}')/items(${reg.spId})`,null,{'IF-MATCH':'*','X-HTTP-Method':'DELETE'})}catch(e){console.warn('Failed to delete registration during cleanup',e)}} await loadSessionsFromSharePoint(); await loadRegistrationsFromSharePoint(); await refreshRegistrationCounts(); render(); showToast('Session deleted.','info')}catch(err){console.error(err); showToast(`Failed to delete session: ${err.message}`,'error')}}
+function exportCSV(){const source=state.currentUser?.isAdmin && state.allRegistrations.length ? state.allRegistrations : state.registrations; let csv='Session,Track,Time,Speaker,Attendee,Email,RegisteredAt\n'; source.forEach(r=>{const s=state.sessions.find(x=>x.id===r.sessionId); if(!s) return; const t=getTrack(s.trackId); const sl=getSlot(s.timeSlotId); csv += `"${String(s.title).replace(/"/g,'""')}","${String(t.name).replace(/"/g,'""')}","${String(sl.label).replace(/"/g,'""')}","${String(s.speakerName).replace(/"/g,'""')}","${String(r.userName || '').replace(/"/g,'""')}","${String(r.userEmail || '').replace(/"/g,'""')}","${String(r.registeredAt || '').replace(/"/g,'""')}"\n`;}); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='medica_forward_registrations.csv'; a.click(); showToast('CSV exported ✓','success')}
+async function rerunDiagnostics(){try{const diag=await runDiagnostics(); showToast('Diagnostics complete. Scroll to review the status panel.','success'); if(state.lastError) renderLaunchFailure(state.lastError,diag); else render();}catch(err){console.error(err);showToast(`Diagnostics failed: ${err.message}`,'error')}}
+async function copyDiagnostics(){const payload={siteUrl:SP_CONFIG.siteUrl,lists:SP_CONFIG.lists,host:state.host,lastError:state.lastError ? (state.lastError.message || String(state.lastError)) : null,diagnostics:state.diagnostics,location:window.location.href}; try{await navigator.clipboard.writeText(JSON.stringify(payload,null,2)); showToast('Diagnostics copied to clipboard.','success')}catch(err){console.error(err); showToast('Unable to copy diagnostics.','error')}}
+function render(){setButtonStates(); if(state.view==='sessions') renderSessions(); else if(state.view==='schedule') renderSchedule(); else if(state.view==='admin') renderAdmin();}
+
+/* ================================================================
+   BOOTSTRAP
+   ================================================================ */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  detectHostConstraints();
+  ['loginName','loginEmail'].forEach(id=>{const el=qs('#'+id); if(el) el.addEventListener('keydown',e=>{if(e.key==='Enter') handleLogin()})});
+  updateUserChip();
+  const autodetected=await autoDetectUser();
+  if(!autodetected){
+    if(state.host.isSandboxed && !SP_CONFIG.allowManualLoginInSandbox){
+      state.lastError = new Error('This host is sandboxed and manual login is disabled by configuration.');
+      const diag = await runDiagnostics().catch(()=>[]);
+      renderLaunchFailure(state.lastError, diag);
+      return;
+    }
+    render();
+  }
+});
+</script>
+</body>
+</html>
